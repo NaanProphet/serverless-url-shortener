@@ -4,28 +4,21 @@ using Microsoft.WindowsAzure.Storage.Table;
 using System.Net;
 using System;
 using System.Linq;
+using System.Text;
 using System.Web;
 
 public static readonly string SHORTENER_URL = System.Environment.GetEnvironmentVariable("SHORTENER_URL");
 public static readonly string UTM_SOURCE = System.Environment.GetEnvironmentVariable("UTM_SOURCE");
-public static readonly string Alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
-public static readonly int Base = Alphabet.Length;
+public static readonly string Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-public static string Encode(int i)
-{
-            if (i == 0)
-                            return Alphabet[0].ToString();
-            var s = string.Empty;
-            while (i > 0)
-            {
-                            s += Alphabet[i % Base];
-                            i = i / Base;
-            }
-
-            return string.Join(string.Empty, s.Reverse());
+public static string GenerateCoupon(int length) {
+  Random random = new Random();
+  StringBuilder result = new StringBuilder(length);
+  for (int i = 0; i < length; i++) {
+    result.Append(Alphabet[random.Next(Alphabet.Length)]);
+  }
+  return result.ToString();
 }
-
-public static string[] UTM_MEDIUMS=new [] {"twitter", "facebook", "linkedin", "googleplus"};
 
 public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId keyTable, CloudTable tableOut, TraceWriter log)
 {
@@ -68,38 +61,10 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, NextId
     }
     
     log.Info($"Current key: {keyTable.Id}"); 
-    
-    if (tagSource) 
-    {
-        url = $"{url}?utm_source={UTM_SOURCE}";
-    }
 
-    if (tagMediums) 
+    for (int i=0; i < 100; i++)
     {
-        foreach(var medium in UTM_MEDIUMS)
-        {
-            var mediumUrl = $"{url}&utm_medium={medium}";
-            var shortUrl = Encode(keyTable.Id++);
-            log.Info($"Short URL for {mediumUrl} is {shortUrl}");
-            var newUrl = new ShortUrl 
-            {
-                PartitionKey = $"{shortUrl.First()}",
-                RowKey = $"{shortUrl}",
-                Medium = medium,
-                Url = mediumUrl
-            };
-            var multiAdd = TableOperation.Insert(newUrl);
-            await tableOut.ExecuteAsync(multiAdd); 
-            result.Add(new Result 
-            { 
-                ShortUrl = $"{SHORTENER_URL}{newUrl.RowKey}",
-                LongUrl = WebUtility.UrlDecode(newUrl.Url)
-            });
-        }
-    }
-    else 
-    {
-        var shortUrl = Encode(keyTable.Id++);
+        var shortUrl = GenerateCoupon(10);
         log.Info($"Short URL for {url} is {shortUrl}");
         var newUrl = new ShortUrl 
         {

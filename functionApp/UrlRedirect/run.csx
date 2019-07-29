@@ -22,8 +22,6 @@ public static HttpResponseMessage Run(HttpRequestMessage req, CloudTable inputTa
 
     if (!String.IsNullOrWhiteSpace(shortUrl))
     {
-        shortUrl = shortUrl.Trim().ToLower();
-
         var partitionKey = $"{shortUrl.First()}";
 
         log.Info($"Searching for partition key {partitionKey} and row {shortUrl}.");
